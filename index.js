@@ -5,14 +5,14 @@ const cheerio = require('cheerio');
 const { format } = require('date-fns');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 const parseXML = async (url) => {
   const response = await axios.get(url);
   const parser = new xml2js.Parser({ explicitArray: false });
   const feed = await parser.parseStringPromise(response.data);
 
-  feed.rss.channel.item.forEach((item) => {
+  return feed.rss.channel.item.map((item) => {
     const $ = cheerio.load(item['content:encoded'] || item.description || '');
     const imageUrl = $('img').first().attr('src');
     item.image = imageUrl || 'default-image-url.jpg'; 
@@ -24,15 +24,12 @@ const parseXML = async (url) => {
     item.description = description.split('.').slice(0, 2).join('.') + '...';
     const date = new Date(item.pubDate);
     item.formattedDate = format(date, 'dd MMM, yyyy');
-  });
 
-  return feed.rss.channel;
+    return item;
+  });
 };
 
-app.use('/public', express.static('public'));
-
-
-app.get('/', async (req, res) => {
+app.get('/api/rss', async (req, res) => {
   try {
     const feedUrls = [
       'https://medium.com/feed/@shahbishwa21', 
@@ -40,17 +37,14 @@ app.get('/', async (req, res) => {
     ];
 
     const feeds = await Promise.all(feedUrls.map(parseXML));
-    res.render('index', { feeds });
+    const mergedFeeds = feeds.flat(); // Flatten the array if you have multiple feed sources
+    res.json(mergedFeeds);
   } catch (error) {
     console.error('Error fetching or parsing feed:', error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-
-app.set('view engine', 'ejs');
-
-
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server running on port ${port}`);
 });
