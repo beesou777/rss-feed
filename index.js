@@ -33,15 +33,20 @@ app.use('/public', express.static('public'));
 
 
 app.get('/', async (req, res) => {
-  const feedUrls = [
-    'https://medium.com/feed/@shahbishwa21', 
-    'https://medium.com/feed/@rohanshakya254'
-  ];
+  try {
+    const feedUrls = [
+      'https://medium.com/feed/@shahbishwa21', 
+      'https://medium.com/feed/@rohanshakya254'
+    ];
 
-
-  const feeds = await Promise.all(feedUrls.map(parseXML));
-  res.render('index', { feeds });
+    const feeds = await Promise.all(feedUrls.map(parseXML));
+    res.render('index', { feeds });
+  } catch (error) {
+    console.error('Error fetching or parsing feed:', error);
+    res.status(500).send('Internal Server Error');
+  }
 });
+
 
 app.set('view engine', 'ejs');
 
