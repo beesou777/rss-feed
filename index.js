@@ -3,9 +3,11 @@ const axios = require('axios');
 const xml2js = require('xml2js');
 const cheerio = require('cheerio');
 const { format } = require('date-fns');
-
+const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
+
+app.use(cors());
 
 const parseXML = async (url) => {
   const response = await axios.get(url);
